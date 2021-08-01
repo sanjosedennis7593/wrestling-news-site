@@ -1,7 +1,23 @@
 import Head from 'next/head'
+import Image from 'next/image'
 import styles from '../styles/Home.module.css'
 
 import parser from 'fast-xml-parser'
+
+
+interface News {
+  title: string
+  link: string
+  image: string
+  description: {
+    __cdata: string
+  }
+}
+
+interface ServerSideProps {
+  [key: string]: any
+}
+
 
 let srcRegex = /src=[\'\"]?([^\'\"]*)[\'\"]?/i;
 
@@ -17,17 +33,24 @@ export default function Home({ data = [] }) {
 
       <main className={styles.main}>
 
-        {data.map((item: any, index) => {
+        {data.map((item: News, index) => {
 
           return <div key={index} className="card glass lg:card-side text-neutral-content mb-8 w-9/12 md:w-6/12">
             <figure className="p-6">
-              <img src={item.image} className="rounded-lg shadow-lg h-56 w-56 object-scale-down" />
+              <div className="rounded-lg shadow-lg object-scale-down">
+                <Image
+                  src={item.image}
+                  layout="fixed"
+                  height={224}
+                  width={358}
+                />
+              </div>
             </figure>
             <div className="card-body">
               <div className="card-title" dangerouslySetInnerHTML={{ __html: item.title }}  >
               </div>
               <div className="card-actions">
-                <a href={item.link} target="_blank" className="btn glass rounded-full">View Source</a>
+                <a href={item.link} target="_blank" rel="noreferrer"  className="btn glass rounded-full">Read Article</a>
               </div>
             </div>
           </div>
@@ -39,7 +62,7 @@ export default function Home({ data = [] }) {
   )
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: ServerSideProps) {
   const response = await fetch('https://www.ringsidenews.com/feed/', {
     method: 'GET',
     headers: {
@@ -47,7 +70,6 @@ export async function getServerSideProps(context) {
     }
   }).then(response => response.text())
 
-  // .then(data => console.log(data));
   const parsedData = parser.parse(response, {
     attributeNamePrefix: "@_",
     attrNodeName: "attr", //default is 'false'
@@ -66,7 +88,7 @@ export async function getServerSideProps(context) {
     // tagValueProcessor : (val, tagName) => he.decode(val), //default is a=>a
   });
 
-  const items = parsedData.rss.channel.item.map((itm: any) => {
+  const items = parsedData.rss.channel.item.map((itm: News) => {
     let src = itm.description.__cdata.match(srcRegex);
     return {
       ...itm,
